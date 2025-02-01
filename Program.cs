@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.UserSecrets;
 
 public class Program
 {
@@ -8,15 +9,14 @@ public class Program
     public static void Main()
     {
         // Console.WriteLine("foo!");
-        // _client = new DiscoordSocketClient();
+        // _client = new DiscordSocketClient();
         // _client.Log += Log;
 
-        var builder = new ConfigurationBuilder()
-            .UseStartup<Startup>();
-        var configuration = builder.Build();
-        Console.WriteLine(builder.GetType());
+        IConfiguration config = new ConfigurationBuilder()
+            .AddUserSecrets<Program>()
+            .Build();
 
-        string? token = configuration["BOT_TOKEN"];
+        string? token = config["BOT_TOKEN"];
         if (token == null) {
             Console.WriteLine("token wrong?");
         } else {
