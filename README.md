@@ -8,6 +8,6 @@ dotnet user-secrets set "BOT_TOKEN" "<token>"
 
 ```bash
 dotnet new console
-dotnet new package Discord.net --version 3.17.1
+dotnet add package DSharpPlus --version 4.5.0
 dotnet new package Microsoft.Extensions.Configuration --version 9.0.1
 ```
