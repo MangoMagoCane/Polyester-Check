@@ -1,6 +1,7 @@
 # Polyester-Check
 
 ```bash
+dotnet run
 dotnet user-secrets init
 dotnet user-secrets set "BOT_TOKEN" "<token>"
 ```
