@@ -1,13 +1,15 @@
 # Polyester-Check
 
+## Building
+
 ```bash
-dotnet run
+dotnet build
 dotnet user-secrets init
 dotnet user-secrets set "BOT_TOKEN" "<token>"
 ```
 
+## Running
+
 ```bash
-dotnet new console
-dotnet add package DSharpPlus --version 4.5.0
-dotnet new package Microsoft.Extensions.Configuration --version 9.0.1
+dotnet run
 ```
