@@ -8,8 +8,10 @@ using Microsoft.Extensions.Configuration.UserSecrets;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Commands;
+using DSharpPlus.Commands.Trees;
 using DSharpPlus.Commands.Processors.TextCommands;
 using DSharpPlus.Commands.Processors.TextCommands.Parsing;
+using DSharpPlus.Commands.Processors.SlashCommands.ArgumentModifiers;
 
 namespace PolyesterCheck
 {
@@ -17,6 +19,7 @@ namespace PolyesterCheck
     {
         public static async Task Main(string[] args)
         {
+            // environment variables
             IConfiguration env_vars = new ConfigurationBuilder()
                 .AddUserSecrets<Program>()
                 .Build();
@@ -27,8 +30,11 @@ namespace PolyesterCheck
                 Console.WriteLine("error: null bot token");
                 return;
             }
-            DiscordClientBuilder d_builder = DiscordClientBuilder.CreateDefault(d_token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
 
+            string npg_connection_string = ""
+
+            // DSharpPlus
+            DiscordClientBuilder d_builder = DiscordClientBuilder.CreateDefault(d_token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
             // there may be a newer more idiomatic way to config event handlers with Commands
             d_builder.ConfigureEventHandlers
             (
@@ -45,11 +51,10 @@ namespace PolyesterCheck
             {
                 TextCommandProcessor text_command_processor = new(new()
                 {
-                    // second param 'params string[] prefix' puts remaining args in arr, eg. f(1, 2, 3), f(1, [2, 3])
                     PrefixResolver = new DefaultPrefixResolver(true, "%", "slava").ResolvePrefixAsync
                 });
 
-                extension.AddCommands([typeof(DoggyCommand)]);
+                extension.AddCommands([typeof(PolyesterCommands), typeof(MemeCommands)]);
                 extension.AddProcessor(text_command_processor);
             }, new CommandsConfiguration()
             {
@@ -65,19 +70,68 @@ namespace PolyesterCheck
         }
     }
 
-    [Command("doggy")]
-    public class DoggyCommand
+    public class PolyesterCommands
     {
-        [Command("puppy"), Description("Makes the sound puppies make...")]
-        public static async ValueTask DoggyAsync(CommandContext context)
+        [Command("register-item"), Description("Register an item for the Polyester Check")]
+        public static async ValueTask DoggyAsync(CommandContext context, [SlashChoiceProvider<ClothingItemsProvider>] int item, [SlashChoiceProvider<FabricTypesProvider>] int fabric, int percentage)
         {
-            await context.RespondAsync("meow meow.");
+            // await context.RespondAsync($"{item}: {ClothingItemsProvider.clothing_items.ElementAt(item).Name} {fabric} {percentage}");
+            await context.RespondAsync($"{item}, {fabric}, {percentage}");
         }
 
+    }
+
+    public class MemeCommands
+    {
         [Command("ohio"), Description("OHIO! SLAVA!")]
         public static async ValueTask OhioAsync(CommandContext context)
         {
-            await context.RespondAsync("https://media1.tenor.com/m/Ii6FkhiwAK4AAAAd/ohio-astolfo.gif");
+            // await context.DeferResponseAsync("https://media1.tenor.com/m/Ii6FkhiwAK4AAAAd/ohio-astolfo.gif");
+            await context.DeferResponseAsync();
+            await context.EditResponseAsync("https://media1.tenor.com/m/Ii6FkhiwAK4AAAAd/ohio-astolfo.gif");
+            await context.FollowupAsync("foo");
         }
+    }
+
+    public class ClothingItemsProvider : IChoiceProvider
+    {
+        public static readonly IEnumerable<DiscordApplicationCommandOptionChoice> clothing_items =
+        [
+            new DiscordApplicationCommandOptionChoice("shirt", 0),
+            new DiscordApplicationCommandOptionChoice("pants", 1),
+            new DiscordApplicationCommandOptionChoice("socks", 2),
+            new DiscordApplicationCommandOptionChoice("hat", 3),
+            new DiscordApplicationCommandOptionChoice("underwear", 4),
+            new DiscordApplicationCommandOptionChoice("watch", 5),
+            new DiscordApplicationCommandOptionChoice("gloves", 6),
+            new DiscordApplicationCommandOptionChoice("sweater", 7),
+            new DiscordApplicationCommandOptionChoice("jacket", 8),
+            new DiscordApplicationCommandOptionChoice("shorts", 9),
+            // new DiscordApplicationCommandOptionChoice("", ),
+        ];
+
+        public ValueTask<IEnumerable<DiscordApplicationCommandOptionChoice>> ProvideAsync(CommandParameter parameter) =>
+            ValueTask.FromResult(clothing_items);
+    }
+
+    public class FabricTypesProvider : IChoiceProvider
+    {
+        public static readonly IEnumerable<DiscordApplicationCommandOptionChoice> fabric_types =
+        [
+            new DiscordApplicationCommandOptionChoice("cotton", 0),
+            new DiscordApplicationCommandOptionChoice("wool", 1),
+            new DiscordApplicationCommandOptionChoice("leather", 2),
+            new DiscordApplicationCommandOptionChoice("denim", 3),
+            new DiscordApplicationCommandOptionChoice("silk", 4),
+            new DiscordApplicationCommandOptionChoice("bamboo", 5),
+            new DiscordApplicationCommandOptionChoice("polyester", 6),
+            new DiscordApplicationCommandOptionChoice("nylon", 7),
+            new DiscordApplicationCommandOptionChoice("spandex", 8),
+            new DiscordApplicationCommandOptionChoice("rayon", 9),
+            new DiscordApplicationCommandOptionChoice("acrylic", 10),
+        ];
+
+        public ValueTask<IEnumerable<DiscordApplicationCommandOptionChoice>> ProvideAsync(CommandParameter parameter) =>
+            ValueTask.FromResult(fabric_types);
     }
 }
