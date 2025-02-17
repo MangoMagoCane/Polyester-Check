@@ -10,10 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="5.0.0-nightly-02453" />
-    <PackageReference Include="DSharpPlus.Commands" Version="5.0.0-nightly-02453" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.1" />
+    <PackageReference Include="NetCord" Version="1.0.0-alpha.347" />
+    <PackageReference Include="NetCord.Hosting" Version="1.0.0-alpha.347" />
+    <PackageReference Include="NetCord.Hosting.AspNetCore" Version="1.0.0-alpha.347" />
+    <PackageReference Include="NetCord.Hosting.Services" Version="1.0.0-alpha.347" />
+    <PackageReference Include="NetCord.Services" Version="1.0.0-alpha.347" />
     <PackageReference Include="Npgsql" Version="9.0.2" />
   </ItemGroup>
 
