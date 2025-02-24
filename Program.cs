@@ -1,13 +1,18 @@
+using System.Reflection;
+using System.Text;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using NetCord;
+
+// using NetCord;
 using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
-using NetCord.Hosting.Services.Commands;
-using NetCord.Services;
+// using NetCord.Hosting.Services.Commands;
+// using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
-using NetCord.Services.Commands;
+using Npgsql;
+// using NetCord.Services.Commands;
 
 namespace PolyesterCheck;
 
@@ -25,10 +30,27 @@ class Program
 {
     public static async Task Main(string[] args)
     {
+        IConfigurationRoot config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
+        DatabaseAppSettings? db_config = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
+        String connectionString = db_config?.ConnectionString ?? "";
+
+        await using NpgsqlDataSource dataSource = NpgsqlDataSource.Create(connectionString);
+        await using NpgsqlCommand command = dataSource.CreateCommand("SELECT foo FROM test;");
+        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+
+        while (await reader.ReadAsync())
+        {
+            Console.WriteLine(reader.GetInt32(0));
+        }
+
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
         builder.Services
-            .AddDiscordGateway()
-            .AddCommands()
+            .AddDiscordGateway(options =>
+            {
+                options.Intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages;
+            })
             .AddApplicationCommands();
         IHost host = builder.Build();
 
@@ -39,30 +61,44 @@ class Program
     }
 }
 
-public class CustomCommandContext(Message message, GatewayClient client) : CommandContext(message, client)
-{
-    public GuildUser BotGuildUser => Guild!.Users[Client.Id];
-}
-
 public class PolyesterModule : ApplicationCommandModule<ApplicationCommandContext>
 {
     [SlashCommand("register", "register!")]
-    public string RegisterItem(ClothingItems item, ClothingTypes type)
+    // public string RegisterItem()
+    public string RegisterItem(
+            [SlashCommandParameter()] ClothingItems item,
+            [SlashCommandParameter()] ClothingTypes type,
+            [SlashCommandParameter(MinValue = 0, MaxValue = 100)] float? percentage = -1)
     {
-        Console.WriteLine((int)item);
-        return $"{item}: {type}";
+        return $"{item}: {type} {percentage}";
     }
 
+    [SlashCommand("context", "foo")]
+    public string PrintContext()
+    {
+        if (Context.Guild == null)
+        {
+            return "it is invalid to use this command outside a guild!";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        PropertyInfo[] properties = Context.GetType().GetProperties();
+        foreach (PropertyInfo pi in properties)
+        {
+            sb.Append(
+                string.Format("Name: {0} | Value: {1}\n",
+                    pi.Name,
+                    pi.GetValue(Context, null)
+                )
+            );
+        }
+        sb.Append(Context.GetType().ToString());
+
+        return sb.ToString();
+    }
 }
 
-public class TestModule : CommandModule<CustomCommandContext>
+public sealed class DatabaseAppSettings
 {
-    [RequireContext<CustomCommandContext>(RequiredContext.Guild)]
-    [Command("test", "foo")]
-    public String Test()
-    {
-        var user = Context.BotGuildUser;
-        return user.Nickname ?? user.Username;
-    }
-
+    public required string ConnectionString { get; set; } = "";
 }
