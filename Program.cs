@@ -1,18 +1,15 @@
 using System.Reflection;
 using System.Text;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
-// using NetCord;
 using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
-// using NetCord.Hosting.Services.Commands;
-// using NetCord.Services;
 using NetCord.Services.ApplicationCommands;
 using Npgsql;
-// using NetCord.Services.Commands;
 
 namespace PolyesterCheck;
 
@@ -33,16 +30,16 @@ class Program
         IConfigurationRoot config = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
             .Build();
-        DatabaseAppSettings? db_config = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
-        String connectionString = db_config?.ConnectionString ?? "";
+        DatabaseAppSettings? dbConfig = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
+        String connectionString = dbConfig?.ConnectionString ?? "";
 
-        await using NpgsqlDataSource dataSource = NpgsqlDataSource.Create(connectionString);
-        await using NpgsqlCommand command = dataSource.CreateCommand("SELECT foo FROM test;");
-        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
+        await using NpgsqlDataSource npgDataSource = NpgsqlDataSource.Create(connectionString);
+        await using NpgsqlCommand npgCommand = npgDataSource.CreateCommand("SELECT foo FROM test;");
+        await using NpgsqlDataReader npgReader = await npgCommand.ExecuteReaderAsync();
 
-        while (await reader.ReadAsync())
+        while (await npgReader.ReadAsync())
         {
-            Console.WriteLine(reader.GetInt32(0));
+            Console.WriteLine(npgReader.GetInt32(0));
         }
 
         HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
@@ -88,7 +85,7 @@ public class PolyesterModule : ApplicationCommandModule<ApplicationCommandContex
             sb.Append(
                 string.Format("Name: {0} | Value: {1}\n",
                     pi.Name,
-                    pi.GetValue(Context, null)
+                    pi.GetValue(Context, null) ?? "<null>"
                 )
             );
         }
