@@ -1,6 +1,3 @@
-using System.Reflection;
-using System.Text;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
@@ -8,94 +5,34 @@ using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
-using NetCord.Services.ApplicationCommands;
 using Npgsql;
 
-namespace PolyesterCheck;
+IConfigurationRoot config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .Build();
+DatabaseAppSettings? dbConfig = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
+String connectionString = dbConfig?.ConnectionString ?? "";
 
-public enum ClothingItems
+await using NpgsqlDataSource npgDataSource = NpgsqlDataSource.Create(connectionString);
+await using NpgsqlCommand npgCommand = npgDataSource.CreateCommand("SELECT foo FROM test;");
+await using NpgsqlDataReader npgReader = await npgCommand.ExecuteReaderAsync();
+
+while (await npgReader.ReadAsync())
 {
-    shirt, pants, socks, hat, underwear, watch, gloves, sweater, jacket, shorts,
+    Console.WriteLine(npgReader.GetInt32(0));
 }
 
-public enum ClothingTypes
-{
-    cotton, wool, leather, denim, silk, bamboo, polyester, nylon, spandex, rayon, acrylic,
-}
-
-class Program
-{
-    public static async Task Main(string[] args)
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+builder.Services
+    .AddDiscordGateway(options =>
     {
-        IConfigurationRoot config = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .Build();
-        DatabaseAppSettings? dbConfig = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
-        String connectionString = dbConfig?.ConnectionString ?? "";
+        options.Intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages;
+    })
+    .AddApplicationCommands();
+IHost host = builder.Build();
 
-        await using NpgsqlDataSource npgDataSource = NpgsqlDataSource.Create(connectionString);
-        await using NpgsqlCommand npgCommand = npgDataSource.CreateCommand("SELECT foo FROM test;");
-        await using NpgsqlDataReader npgReader = await npgCommand.ExecuteReaderAsync();
+host.AddModules(typeof(Program).Assembly);
+host.UseGatewayEventHandlers();
 
-        while (await npgReader.ReadAsync())
-        {
-            Console.WriteLine(npgReader.GetInt32(0));
-        }
+await host.RunAsync();
 
-        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-        builder.Services
-            .AddDiscordGateway(options =>
-            {
-                options.Intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-            })
-            .AddApplicationCommands();
-        IHost host = builder.Build();
-
-        host.AddModules(typeof(Program).Assembly);
-        host.UseGatewayEventHandlers();
-
-        await host.RunAsync();
-    }
-}
-
-public class PolyesterModule : ApplicationCommandModule<ApplicationCommandContext>
-{
-    [SlashCommand("register", "register!")]
-    // public string RegisterItem()
-    public string RegisterItem(
-            [SlashCommandParameter()] ClothingItems item,
-            [SlashCommandParameter()] ClothingTypes type,
-            [SlashCommandParameter(MinValue = 0, MaxValue = 100)] float? percentage = -1)
-    {
-        return $"{item}: {type} {percentage}";
-    }
-
-    [SlashCommand("context", "foo")]
-    public string PrintContext()
-    {
-        if (Context.Guild == null)
-        {
-            return "it is invalid to use this command outside a guild!";
-        }
-
-        StringBuilder sb = new StringBuilder();
-        PropertyInfo[] properties = Context.GetType().GetProperties();
-        foreach (PropertyInfo pi in properties)
-        {
-            sb.Append(
-                string.Format("Name: {0} | Value: {1}\n",
-                    pi.Name,
-                    pi.GetValue(Context, null) ?? "<null>"
-                )
-            );
-        }
-        sb.Append(Context.GetType().ToString());
-
-        return sb.ToString();
-    }
-}
-
-public sealed class DatabaseAppSettings
-{
-    public required string ConnectionString { get; set; } = "";
-}
