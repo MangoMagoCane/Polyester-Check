@@ -1,3 +1,5 @@
+namespace Polyester;
+
 public enum ClothingItems
 {
     shirt, pants, socks, hat, underwear, watch, gloves, sweater, jacket, shorts,

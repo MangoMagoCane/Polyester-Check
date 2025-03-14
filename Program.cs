@@ -5,34 +5,54 @@ using NetCord.Gateway;
 using NetCord.Hosting.Gateway;
 using NetCord.Hosting.Services;
 using NetCord.Hosting.Services.ApplicationCommands;
+
 using Npgsql;
 
-IConfigurationRoot config = new ConfigurationBuilder()
-    .AddJsonFile("appsettings.json")
-    .Build();
-DatabaseAppSettings? dbConfig = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
-String connectionString = dbConfig?.ConnectionString ?? "";
+namespace Polyester;
 
-await using NpgsqlDataSource npgDataSource = NpgsqlDataSource.Create(connectionString);
-await using NpgsqlCommand npgCommand = npgDataSource.CreateCommand("SELECT foo FROM test;");
-await using NpgsqlDataReader npgReader = await npgCommand.ExecuteReaderAsync();
-
-while (await npgReader.ReadAsync())
+class Program
 {
-    Console.WriteLine(npgReader.GetInt32(0));
-}
+    public static readonly NpgsqlDataSource npgDataSource;
 
-HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-builder.Services
-    .AddDiscordGateway(options =>
+    static Program()
     {
-        options.Intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages;
-    })
-    .AddApplicationCommands();
-IHost host = builder.Build();
+        IConfigurationRoot config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .Build();
 
-host.AddModules(typeof(Program).Assembly);
-host.UseGatewayEventHandlers();
+        DatabaseAppSettings? dbConfig = config.GetRequiredSection("Database").Get<DatabaseAppSettings>();
+        String connectionString = dbConfig?.ConnectionString ?? "";
 
-await host.RunAsync();
+        NpgsqlDataSourceBuilder npgDataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        npgDataSourceBuilder.MapEnum<ClothingItems>();
+        npgDataSourceBuilder.MapEnum<ClothingTypes>();
+
+        npgDataSource = npgDataSourceBuilder.Build();
+    }
+
+    public static async Task Main(string[] args)
+    {
+        await using NpgsqlCommand npgCommand = npgDataSource.CreateCommand("SELECT foo FROM test;");
+        await using NpgsqlDataReader npgReader = await npgCommand.ExecuteReaderAsync();
+
+        while (await npgReader.ReadAsync())
+        {
+            Console.WriteLine(npgReader.GetInt32(0));
+        }
+
+        HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+        builder.Services
+            .AddDiscordGateway(options =>
+            {
+                options.Intents = GatewayIntents.Guilds | GatewayIntents.GuildMessages;
+            })
+            .AddApplicationCommands();
+        IHost host = builder.Build();
+
+        host.AddModules(typeof(Program).Assembly);
+        host.UseGatewayEventHandlers();
+
+        await host.RunAsync();
+    }
+}
 
