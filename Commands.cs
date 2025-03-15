@@ -12,11 +12,21 @@ public class PolyesterModule : ApplicationCommandModule<ApplicationCommandContex
     [SlashCommand("register", "registers a new item")]
     // public string RegisterItem()
     public string RegisterItem(
-            [SlashCommandParameter()] ClothingItems item,
-            [SlashCommandParameter()] ClothingTypes type,
-            [SlashCommandParameter(MinValue = 0, MaxValue = 100)] float? percentage = -1)
+            [SlashCommandParameter()] ClothingItem item,
+            [SlashCommandParameter()] ClothingType type,
+            [SlashCommandParameter(MinValue = 0, MaxValue = 100)] int percentage = -1)
     {
-        return $"{item}: {type} {percentage}";
+        if (Context.Guild == null)
+        {
+            return "it is invalid to use this command outside a guild!";
+        }
+
+        if (percentage == -1)
+        {
+            percentage = Program.ClothingItemDefaultPercentageMap[item];
+        }
+
+        return $"{item} ({Program.ClothingItemWeightMap[item]}): {type} {percentage}";
     }
 
     [SlashCommand("context", "foo")]

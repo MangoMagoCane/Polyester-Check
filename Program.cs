@@ -13,6 +13,8 @@ namespace Polyester;
 class Program
 {
     public static readonly NpgsqlDataSource npgDataSource;
+    public static readonly Dictionary<ClothingItem, int> ClothingItemWeightMap;
+    public static readonly Dictionary<ClothingItem, int> ClothingItemDefaultPercentageMap;
 
     static Program()
     {
@@ -24,10 +26,40 @@ class Program
         String connectionString = dbConfig?.ConnectionString ?? "";
 
         NpgsqlDataSourceBuilder npgDataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
-        npgDataSourceBuilder.MapEnum<ClothingItems>();
-        npgDataSourceBuilder.MapEnum<ClothingTypes>();
-
+        npgDataSourceBuilder.MapEnum<ClothingItem>();
+        npgDataSourceBuilder.MapEnum<ClothingType>();
         npgDataSource = npgDataSourceBuilder.Build();
+
+        // may want to put into sql table and read into dict statically making the coupling looser or something idek
+        ClothingItemWeightMap = new Dictionary<ClothingItem, int>
+        {
+            {ClothingItem.TShirt, 40},
+            {ClothingItem.LongSleeve, 45},
+            {ClothingItem.Pants, 45},
+            {ClothingItem.Socks, 5},
+            {ClothingItem.Hat, 5},
+            {ClothingItem.Underwear, 5},
+            {ClothingItem.Watch, 2},
+            {ClothingItem.Gloves, 5},
+            {ClothingItem.Sweater, 45},
+            {ClothingItem.Jacket, 45},
+            {ClothingItem.Shorts, 25},
+        };
+
+        ClothingItemDefaultPercentageMap = new Dictionary<ClothingItem, int>
+        {
+            {ClothingItem.TShirt, 20},
+            {ClothingItem.LongSleeve, 20},
+            {ClothingItem.Pants, 20},
+            {ClothingItem.Socks, 20},
+            {ClothingItem.Hat, 20},
+            {ClothingItem.Underwear, 20},
+            {ClothingItem.Watch, 20},
+            {ClothingItem.Gloves, 20},
+            {ClothingItem.Sweater, 20},
+            {ClothingItem.Jacket, 20},
+            {ClothingItem.Shorts, 20},
+        };
     }
 
     public static async Task Main(string[] args)
